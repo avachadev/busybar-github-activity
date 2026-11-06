@@ -1,0 +1,13 @@
+{
+  "format_version": 1,
+  "version": 1,
+  "fields": {
+    "profile": {
+      "type": "string",
+      "label": "GitHub profile",
+      "description": "Link to a GitHub profile, e.g. https://github.com/octocat, or just the user name. The profile must be public.",
+      "default": "",
+      "max_length": 100
+    }
+  }
+}
