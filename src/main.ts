@@ -97,12 +97,14 @@ function main(): void {
       const recent = await readRecent(user, REQUEST_TIMEOUT_MS);
       activity = buildActivity(recent, null, activity);
       notFound = false;
-      failures = 0;
-      nextReadAt = Date.now() + REFRESH_MS;
       if (!activity.complete) {
         await show(activityFrame(activity));
         activity = buildActivity(recent, await readOlder(user, recent, REQUEST_TIMEOUT_MS), activity);
       }
+      // Only a whole read ends the backoff: a last year that loads while the
+      // older weeks keep failing must not retry at full rate forever.
+      failures = 0;
+      nextReadAt = Date.now() + REFRESH_MS;
       saveActivity(user, activity);
     } catch (err) {
       if (err instanceof NotFoundError) {

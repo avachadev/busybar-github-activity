@@ -126,3 +126,12 @@ test("the year boundary early in the year needs two older years", () => {
   const recent = parseCalendar(response("2026-02-10", 370, 0, () => 0));
   assert.deepEqual(olderYears(recent), [2024, 2025]);
 });
+
+test("a graph saved over a year ago does not cover the gap before the last year", () => {
+  const old = parseCalendar(response("2025-08-01", 370, 10, () => 1));
+  const stale = buildActivity(old, null, null);
+  const full = { ...stale, complete: true };
+  const recent = parseCalendar(response("2026-11-06", 370, 10, () => 1));
+  const next = buildActivity(recent, null, full);
+  assert.ok(!next.complete);
+});

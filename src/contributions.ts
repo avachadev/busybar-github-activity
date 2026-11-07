@@ -168,7 +168,11 @@ export function buildActivity(
 
   // A day the service skipped inside a range it did answer is a day without contributions.
   const firstKnown = recent.days[0].day;
-  const olderKnown = older !== null || (previous !== null && previous.complete && previous.start <= start);
+  // The previous graph covers the older weeks only if it reaches back to the
+  // graph's start and forward to where the last year begins: a graph saved
+  // more than a year ago leaves a gap that must be read, not filled with zeros.
+  const olderKnown = older !== null ||
+    (previous !== null && previous.complete && previous.start <= start && previous.end >= firstKnown - 1);
   for (let i = 0; i < levels.length; i += 1) {
     if (levels[i] < 0 && (start + i >= firstKnown || olderKnown)) levels[i] = 0;
   }

@@ -2,7 +2,7 @@
   "format_version": 1,
   "id": "app.avachadev.ghactivity",
   "name": "GitHub Activity",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "api_version": "27.12.0",
   "description": "Your GitHub contribution graph and the year's total, on the front screen",
   "author": "avachadev"

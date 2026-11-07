@@ -1,7 +1,7 @@
 {
   "name": "busybar-github-activity",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "BUSY Bar app: your GitHub contribution graph on the front screen",
   "author": "avachadev",
   "type": "module",
