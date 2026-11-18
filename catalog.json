@@ -1,0 +1,14 @@
+{
+  "category": "dev-monitoring",
+  "short_description": "Your GitHub contributions by day, week, month and year, over the contribution graph. No token, no computer.",
+  "description": "Your GitHub contributions on the BUSY Bar. Press **Start** or **OK** to switch between day, week, month and year; turn the Scroll Wheel to go back in time. The back screen shows your stats.\n\n**Setup:** in the bar's web interface open **Apps → GitHub Activity** and paste your profile link. No token needed.",
+  "changelog": "First version in the catalog.",
+  "screenshots": [
+    "screenshots/front-1.png",
+    "screenshots/front-2.png",
+    "screenshots/front-3.png"
+  ],
+  "back_screenshots": [
+    "screenshots/back-1.png"
+  ]
+}

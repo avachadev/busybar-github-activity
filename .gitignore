@@ -19,3 +19,10 @@ dist
 # Python
 __pycache__/
 *.pyc
+
+# Kept out of the public repository by BUSY Bar Emulator
+.busy/
+submission/
+._*
+Thumbs.db
+desktop.ini
