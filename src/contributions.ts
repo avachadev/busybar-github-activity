@@ -41,19 +41,25 @@ export function yearOf(day: DayNumber): number {
   return new Date(day * MS_PER_DAY).getUTCFullYear();
 }
 
-/** One day of the calendar. */
-export interface Day {
-  readonly day: DayNumber;
-  readonly count: number;
-  /** 0..4, GitHub's own quartiles for this user. */
-  readonly level: number;
-}
-
-/** What one response holds, in date order. */
+/**
+ * What one response holds, in date order, as three parallel arrays rather than
+ * an object per day: a year of day objects alone would take a quarter of the heap.
+ */
 export interface Calendar {
   /** `total.lastYear` for `?y=last`; -1 when the response has none. */
   readonly lastYear: number;
-  readonly days: Day[];
+  readonly day: DayNumber[];
+  readonly count: number[];
+  /** 0..4, GitHub's own quartiles for this user. */
+  readonly level: number[];
+}
+
+export function firstDay(calendar: Calendar): DayNumber {
+  return calendar.day[0];
+}
+
+export function lastDay(calendar: Calendar): DayNumber {
+  return calendar.day[calendar.day.length - 1];
 }
 
 /** The value after `"name":` inside `chunk`: a number, or the text of a string. */
@@ -84,7 +90,9 @@ export function parseCalendar(text: string, from = -Infinity, to = Infinity): Ca
   const totalAt = head.indexOf('"lastYear":');
   const lastYear = totalAt < 0 ? -1 : parseInt(field(head.substring(totalAt), "lastYear") ?? "", 10);
 
-  const days: Day[] = [];
+  const days: DayNumber[] = [];
+  const counts: number[] = [];
+  const levels: number[] = [];
   let pos = list;
   for (;;) {
     const open = text.indexOf("{", pos);
@@ -98,10 +106,12 @@ export function parseCalendar(text: string, from = -Infinity, to = Infinity): Ca
     const count = parseInt(field(chunk, "count") ?? "", 10);
     const level = parseInt(field(chunk, "level") ?? "", 10);
     if (isNaN(day) || isNaN(count) || day < from || day > to) continue;
-    days.push({ day, count: Math.max(0, count), level: isNaN(level) ? 0 : Math.max(0, Math.min(4, level)) });
+    days.push(day);
+    counts.push(Math.max(0, count));
+    levels.push(isNaN(level) ? 0 : Math.max(0, Math.min(4, level)));
   }
   if (days.length === 0 && from === -Infinity) throw new Error("no days in response");
-  return { lastYear: isNaN(lastYear) ? -1 : lastYear, days };
+  return { lastYear: isNaN(lastYear) ? -1 : lastYear, day: days, count: counts, level: levels };
 }
 
 /** Everything the screen shows. */
@@ -115,6 +125,8 @@ export interface Activity {
   readonly end: DayNumber;
   /** One level per day from `start` to `end`, oldest first; -1 where it is not known yet. */
   readonly levels: number[];
+  /** Contributions per day, aligned with `levels`; -1 where the count is not known (the level may be). */
+  readonly counts: number[];
   /** Every day of the graph is known: nothing older needs to be read. */
   readonly complete: boolean;
 }
@@ -123,6 +135,12 @@ export interface Activity {
 function levelIn(activity: Activity, day: DayNumber): number {
   const i = day - activity.start;
   return i >= 0 && i < activity.levels.length ? activity.levels[i] : -1;
+}
+
+/** Count of `day` in `activity`, or -1 when it does not hold that day's count. */
+function countIn(activity: Activity, day: DayNumber): number {
+  const i = day - activity.start;
+  return activity.counts && i >= 0 && i < activity.counts.length ? activity.counts[i] : -1;
 }
 
 /** First day of the graph: the Sunday that starts the leftmost column. */
@@ -135,8 +153,8 @@ export function graphStart(end: DayNumber): DayNumber {
  * `?y=last` reaches back about 53 weeks, the graph 72.
  */
 export function olderYears(recent: Calendar): number[] {
-  const start = graphStart(recent.days[recent.days.length - 1].day);
-  const firstKnown = recent.days[0].day;
+  const start = graphStart(lastDay(recent));
+  const firstKnown = firstDay(recent);
   const years: number[] = [];
   for (let y = yearOf(start); start < firstKnown && y <= yearOf(firstKnown - 1); y += 1) years.push(y);
   return years;
@@ -152,22 +170,29 @@ export function buildActivity(
   older: Calendar | null,
   previous: Activity | null,
 ): Activity {
-  const last = recent.days[recent.days.length - 1];
-  const start = graphStart(last.day);
+  const end = lastDay(recent);
+  const start = graphStart(end);
   const levels: number[] = [];
-  for (let d = start; d <= last.day; d += 1) levels.push(previous ? levelIn(previous, d) : -1);
+  const counts: number[] = [];
+  for (let d = start; d <= end; d += 1) {
+    levels.push(previous ? levelIn(previous, d) : -1);
+    counts.push(previous ? countIn(previous, d) : -1);
+  }
 
-  const place = (days: readonly Day[]) => {
-    for (const entry of days) {
-      const i = entry.day - start;
-      if (i >= 0 && i < levels.length) levels[i] = entry.level;
+  const place = (calendar: Calendar) => {
+    for (let k = 0; k < calendar.day.length; k += 1) {
+      const i = calendar.day[k] - start;
+      if (i >= 0 && i < levels.length) {
+        levels[i] = calendar.level[k];
+        counts[i] = calendar.count[k];
+      }
     }
   };
-  if (older) place(older.days);
-  place(recent.days);
+  if (older) place(older);
+  place(recent);
 
   // A day the service skipped inside a range it did answer is a day without contributions.
-  const firstKnown = recent.days[0].day;
+  const firstKnown = firstDay(recent);
   // The previous graph covers the older weeks only if it reaches back to the
   // graph's start and forward to where the last year begins: a graph saved
   // more than a year ago leaves a gap that must be read, not filled with zeros.
@@ -175,14 +200,15 @@ export function buildActivity(
     (previous !== null && previous.complete && previous.start <= start && previous.end >= firstKnown - 1);
   for (let i = 0; i < levels.length; i += 1) {
     if (levels[i] < 0 && (start + i >= firstKnown || olderKnown)) levels[i] = 0;
+    if (counts[i] < 0 && levels[i] === 0) counts[i] = 0;
   }
 
   let total = recent.lastYear;
   if (total < 0) {
     total = 0;
-    for (const entry of recent.days) total += entry.count;
+    for (const c of recent.count) total += c;
   }
-  return { total, today: last.count, start, end: last.day, levels, complete: olderKnown || start >= firstKnown };
+  return { total, today: recent.count[recent.count.length - 1], start, end, levels, counts, complete: olderKnown || start >= firstKnown };
 }
 
 /** The user does not exist: worth a different message than a network error. */
@@ -233,9 +259,13 @@ export function readRecent(user: string, timeoutMs: number): Promise<Calendar> {
   return readCalendar(user, "y=last", timeoutMs);
 }
 
+/** One calendar year, every day of it. */
+export function readYear(user: string, year: number, timeoutMs: number): Promise<Calendar> {
+  return readCalendar(user, `y=${year}`, timeoutMs);
+}
+
 /** The graph's weeks before the last year, kept to just those days. */
 export function readOlder(user: string, recent: Calendar, timeoutMs: number): Promise<Calendar> {
   const query = olderYears(recent).map((y) => `y=${y}`).join("&");
-  const end = recent.days[recent.days.length - 1].day;
-  return readCalendar(user, query, timeoutMs, graphStart(end), recent.days[0].day - 1);
+  return readCalendar(user, query, timeoutMs, graphStart(lastDay(recent)), firstDay(recent) - 1);
 }

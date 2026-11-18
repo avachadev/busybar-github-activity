@@ -18,6 +18,8 @@ interface Stored {
   readonly end: number;
   /** One digit per day, 0..4. */
   readonly levels: string;
+  /** Contributions per day, comma-separated, empty where not known. Absent in caches from 1.0. */
+  readonly counts?: string;
 }
 
 function storage(): Storage | undefined {
@@ -32,7 +34,13 @@ export function loadActivity(user: string): Activity | null {
     if (s.user.toLowerCase() !== user.toLowerCase() || s.levels.length !== s.end - s.start + 1) return null;
     const levels: number[] = [];
     for (const ch of s.levels) levels.push(Math.max(0, Math.min(4, parseInt(ch, 10) || 0)));
-    return { total: s.total, today: s.today, start: s.start, end: s.end, levels, complete: true };
+    const counts: number[] = [];
+    const stored = s.counts ? s.counts.split(",") : [];
+    for (let i = 0; i < levels.length; i += 1) {
+      const n = i < stored.length && stored[i] !== "" ? parseInt(stored[i], 10) : NaN;
+      counts.push(isNaN(n) ? (levels[i] === 0 ? 0 : -1) : Math.max(0, n));
+    }
+    return { total: s.total, today: s.today, start: s.start, end: s.end, levels, counts, complete: true };
   } catch {
     return null;
   }
@@ -48,6 +56,7 @@ export function saveActivity(user: string, activity: Activity): void {
     start: activity.start,
     end: activity.end,
     levels: activity.levels.join(""),
+    counts: activity.counts.map((c) => (c < 0 ? "" : String(c))).join(","),
   };
   try {
     const raw = JSON.stringify(stored);

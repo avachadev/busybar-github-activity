@@ -1,29 +1,37 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import type { Activity } from "../src/contributions.ts";
-import { activityFrame } from "../src/screen.ts";
+import { heatmapXpm, litXpm } from "../src/heatmap.ts";
+import { periodLine } from "../src/screen.ts";
 
-function activity(total: number, today: number): Activity {
-  return { total, today, start: 0, end: 0, levels: [0], complete: true };
-}
+const byId = (elements: ReturnType<typeof periodLine>, id: string) =>
+  elements.find((e) => e.id === id) as { text?: string; color?: string; x: number; width?: number };
 
-const label = (a: Activity) => activityFrame(a).find((e) => e.id === "label");
-
-test("the label sits after the total", () => {
-  const el = label(activity(100, 0)) as { x: number; text: string };
-  assert.equal(el.text, "contribs");
-  // "100" ends at x 10; columns 11..14 stay dark.
-  assert.equal(el.x, 15);
+test("the period line: label from x 12, the count in green at the right edge", () => {
+  const line = periodLine("Last week", 1333);
+  assert.equal(byId(line, "label").text, "Last week");
+  assert.equal(byId(line, "label").x, 12);
+  assert.equal(byId(line, "count").text, "1333");
+  assert.equal(byId(line, "count").color, "#35A85BFF");
+  assert.equal(byId(line, "label").width, undefined);
 });
 
-test("a long total next to a busy day drops the label", () => {
-  assert.ok(label(activity(9999, 99)));
-  assert.equal(label(activity(123456, 123)), undefined);
+test("a count still being read shows dots", () => {
+  assert.equal(byId(periodLine("2019", -1), "count").text, "...");
 });
 
-test("a quiet day is dimmed", () => {
-  const today = activityFrame(activity(5, 0)).find((e) => e.id === "today") as { color: string; text: string };
-  assert.equal(today.text, "+0");
-  assert.equal(today.color, "#5A5A5AFF");
+test("a user name too long for the room scrolls inside it", () => {
+  const label = byId(periodLine("a-very-long-github-user", 909), "label");
+  assert.ok(label.width !== undefined && label.width > 0 && 12 + label.width < 72);
+});
+
+test("the dimmed graph and the layer that lights the period", () => {
+  const dim = heatmapXpm([4, 4, 4], Infinity, -1).split("\n").slice(-7);
+  assert.equal(dim[0][0], "9");
+  // Days 8..9 sit in column 1, rows 1..2: a one-column layer from column 1.
+  const levels = new Array(14).fill(2);
+  const layer = litXpm(levels, 8, 9);
+  assert.equal(layer.column, 1);
+  const rows = layer.data.split("\n").slice(-7);
+  assert.deepEqual(rows.map((r) => r), [" ", "2", "2", " ", " ", " ", " "]);
 });

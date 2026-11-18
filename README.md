@@ -1,6 +1,7 @@
 # GitHub Activity
 
-Your GitHub contribution graph on the front screen of a [BUSY Bar](https://busy.bar).
+Your GitHub contribution graph on the front screen of a [BUSY Bar](https://busy.bar), and the numbers
+behind it on the back screen.
 
 ![GitHub Activity on the BUSY Bar front display](docs/demo.png)
 
@@ -30,14 +31,47 @@ the older weeks fill in from the left a few seconds later.
 | --- | --- |
 | **GitHub profile** | Whose activity to show. A link such as `https://github.com/octocat` works, and so do `github.com/octocat`, `@octocat` and just `octocat`. The profile must be public. |
 
-A changed profile shows up within a few seconds, without restarting the app. A short press of
-**Back** quits the app. Start it again from the bar's Apps menu or with **Start** in the web interface.
+A changed profile shows up within a few seconds, without restarting the app.
+
+## Controls
+
+| Control | Action |
+| --- | --- |
+| **Start** or **OK** | Switches what the front screen counts: a day, a week, a month, a year. Each starts from the current one. The bar remembers your choice. |
+| Wheel | Steps back through earlier periods of that kind, one per click, and forward again. The screen stays where you leave it. |
+| **Back** | From an earlier period, returns to the current one. From the current one, quits the app; start it again from the bar's Apps menu or with **Start** in the web interface. |
 
 ## What the bar shows
 
+### Front screen
+
+The app's icon, the period, and its contributions in green; under them the 72-week graph, with the
+period at full brightness and every other day dimmed to a shade; the period's empty days are a little lighter, so its
+edges show even in a quiet week. **Today** lights the whole graph.
+
+| Kind | Current, then going back |
+| --- | --- |
+| Day | `Today`, `Yesterday`, `Nov 15`, ... |
+| Week (Sunday to Saturday) | `This week` (up to today), `Last week`, `Nov 1-7`, ... |
+| Month | `This mnth` (up to today), `Last mnth`, `Sep 2026`, ... |
+| Year | `Last year`: the last 365 days, up to today. GitHub's profile counts from the Sunday of the week a year ago, so its number, the one on the profile screen, can be a few days' worth higher. Then calendar years: `2026` so far, `2025`, ... |
+
+A period older than the graph moves the graph back to end with it. While an earlier year is being read,
+the count shows `...` and its days fill in when it arrives. The wheel stops at the first year without
+any contribution.
+
+### Back screen
+
+Your user name and the year's total, the last 49 weeks in grey, and four numbers counted from the
+graph: days with contributions in the last 365, contributions this month, the busiest day of the last
+year with its date, and this week against last week.
+
+### Messages
+
 | Screen | Meaning |
 | --- | --- |
-| `1234 contribs +12` and the graph | Contributions in the last year, contributions today, and the graph. `+0` is dimmed on a quiet day. When the total and today's count get too long to fit, the `contribs` label is dropped. |
+| Screen | Meaning |
+| --- | --- |
 | `SET PROFILE` / `IN SETTINGS` | No profile set yet. |
 | `BAD PROFILE` and what you typed | Not a GitHub user name or profile link. |
 | `LOADING` and the user name | The first read, about 10 seconds. |
@@ -60,7 +94,8 @@ https://github-contributions-api.jogruber.de/v4/<user>?y=last
 ```
 
 Each refresh is one request of about 15 KB. The first time a profile is shown there is one more
-request, for the weeks before the last year. The service sees only the public user name, and it
+request, for the weeks before the last year. Going back past the graph reads one more request per
+earlier calendar year, once per run of the app. The service sees only the public user name, and it
 caches answers for about an hour, so today's count can lag behind GitHub by that much.
 
 The numbers are GitHub's **contributions**, not just commits: commits, pull requests, issues and code
@@ -111,8 +146,11 @@ Over Wi-Fi add `-- --addr <bar-ip>` (and `--password <password>` if the bar has 
 | `src/config.ts` | Reads the setting. |
 | `src/contributions.ts` | Reads and parses the calendar, and merges the last year with the older weeks. |
 | `src/cache.ts` | Keeps the last complete graph in `localStorage`. |
-| `src/heatmap.ts` | Renders the graph as XPM2. |
-| `src/screen.ts` | Display elements for the graph and the message screens. |
+| `src/heatmap.ts` | Renders the pictures as XPM2: the graph with the period lit, the back screen's year. |
+| `src/screen.ts` | Display elements for the front screen's period line, the back screen and the message screens. |
+| `src/stats.ts` | Active days, this month, the busiest day and the two weeks, from the graph's days. |
+| `src/period.ts` | The day, week, month and year periods: their days, labels and the graph window under them. |
+| `src/history.ts` | Earlier years, read one calendar year at a time, with levels and counts. |
 | `src/layout.ts` | Screen geometry, palette and text widths. |
 | `src/appmeta/` | Manifest, settings schema, icons. |
 | `test/` | Unit tests, run with Node's built-in test runner. |

@@ -36,14 +36,14 @@ test("day numbers and weekdays", () => {
 test("parses the three fields and nothing else", () => {
   const cal = parseCalendar(response("2026-11-06", 3, 42, (i) => i * 2));
   assert.equal(cal.lastYear, 42);
-  assert.deepEqual(cal.days.map((d) => d.count), [0, 2, 4]);
-  assert.deepEqual(cal.days.map((d) => d.level), [0, 2, 4]);
-  assert.equal(cal.days[2].day, dayNumber("2026-11-06"));
+  assert.deepEqual(cal.count, [0, 2, 4]);
+  assert.deepEqual(cal.level, [0, 2, 4]);
+  assert.equal(cal.day[2], dayNumber("2026-11-06"));
 });
 
 test("tolerates reordered keys and spaces", () => {
   const cal = parseCalendar('{"contributions": [{"level": 3, "count": 7, "date": "2026-01-05"}], "total": {"lastYear": 7}}');
-  assert.deepEqual(cal.days, [{ day: dayNumber("2026-01-05"), count: 7, level: 3 }]);
+  assert.deepEqual([cal.day, cal.count, cal.level], [[dayNumber("2026-01-05")], [7], [3]]);
   assert.equal(cal.lastYear, -1);
 });
 
@@ -54,7 +54,7 @@ test("rejects an error body", () => {
 test("keeps only the days in range", () => {
   const text = response("2025-12-31", 365, null, () => 1);
   const cal = parseCalendar(text, dayNumber("2025-12-01"), dayNumber("2025-12-10"));
-  assert.equal(cal.days.length, 10);
+  assert.equal(cal.day.length, 10);
 });
 
 test("the graph starts on a Sunday, 72 weeks back", () => {
@@ -73,8 +73,8 @@ test("asks for the calendar years the last year does not cover", () => {
 
 test("merges both calendars into one level per day", () => {
   const recent = parseCalendar(response("2026-11-06", 370, 100, (i) => (i === 369 ? 5 : 1)));
-  const start = graphStart(recent.days[recent.days.length - 1].day);
-  const older = parseCalendar(response("2025-12-31", 365, null, () => 2), start, recent.days[0].day - 1);
+  const start = graphStart(recent.day[recent.day.length - 1]);
+  const older = parseCalendar(response("2025-12-31", 365, null, () => 2), start, recent.day[0] - 1);
   const first = buildActivity(recent, null, null);
   assert.ok(!first.complete);
   assert.equal(first.levels[0], -1);
@@ -98,8 +98,8 @@ test("sums the counts when the total is missing", () => {
 test("the bitmap is 72x7 with future days transparent", () => {
   const recent = parseCalendar(response("2026-11-06", 370, 1, () => 1));
   const xpm = heatmapXpm(buildActivity(recent, null, null).levels).split("\n");
-  assert.equal(xpm[1], "72 7 6 1");
-  const rows = xpm.slice(8);
+  assert.equal(xpm[1], "72 7 11 1");
+  const rows = xpm.slice(13);
   assert.equal(rows.length, 7);
   for (const row of rows) assert.equal(row.length, 72);
   // 2026-11-06 is a Friday: Saturday, the last row of the last column, has not happened yet.
@@ -112,7 +112,7 @@ test("the bitmap is 72x7 with future days transparent", () => {
 
 test("a refresh a week later keeps the older weeks without reading them", () => {
   const older = (cal: ReturnType<typeof parseCalendar>) =>
-    parseCalendar(response("2025-12-31", 600, null, () => 3), graphStart(cal.days[cal.days.length - 1].day), cal.days[0].day - 1);
+    parseCalendar(response("2025-12-31", 600, null, () => 3), graphStart(cal.day[cal.day.length - 1]), cal.day[0] - 1);
   const week1 = parseCalendar(response("2026-11-06", 370, 10, () => 1));
   const full = buildActivity(week1, older(week1), null);
   const week2 = parseCalendar(response("2026-11-13", 370, 10, () => 1));

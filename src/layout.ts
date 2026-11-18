@@ -53,6 +53,33 @@ export const LEVEL_COLORS: readonly string[] = [
   "#56F08A",
 ];
 
+/**
+ * The back screen is 160x80 in sixteen greys; its right 12 px belong to the
+ * firmware's status bar, so the app draws in the left 148.
+ */
+export const BACK_W = 148;
+export const BACK_H = 80;
+
+/** The five levels in grey for the back screen; level 0 still shows the grid. */
+export const BACK_LEVEL_COLORS: readonly string[] = ["#2A2A2A", "#5A5A5A", "#8A8A8A", "#C0C0C0", "#FFFFFF"];
+
+/**
+ * Days outside the chosen period are drawn at this share of their brightness.
+ * On LEDs 70 % hardly differs from full, so the rest of the graph drops to a shade.
+ */
+export const DIM = 0.3;
+
+/**
+ * The chosen period's empty days, a little lighter than level 0 elsewhere: a
+ * week without contributions still shows where it is against the dimmed rest.
+ */
+export const LIT_EMPTY_COLOR = "#343C4A";
+
+/** The front screen's line, after the Figma mockup: the 9x9 icon, a white label from x 12, the count on the right in green. */
+export const PERIOD_LABEL_X = 12;
+export const PERIOD_TEXT_Y = 0;
+export const COUNT_COLOR = "#35A85B";
+
 export const TOTAL_COLOR = "#FFFFFF";
 export const LABEL_COLOR = "#8B8B8B";
 export const TODAY_COLOR = LEVEL_COLORS[4];
