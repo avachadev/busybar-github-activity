@@ -90,11 +90,11 @@ test("a read year answers levels, counts and sums; days not read are unknown", (
   assert.equal(sumBetween(a, h, dayNumber("2024-12-30"), dayNumber("2025-01-02")), -1);
 });
 
-test("an empty year below the graph is the floor; nothing before it counts", () => {
+test("an empty year below the graph is the floor; days before it are empty", () => {
   const a = activity(WED, [1]);
   const h = emptyHistory();
   addYear(h, a, 2024, parseCalendar(year(2024, null)));
   assert.equal(h.floor, dayNumber("2025-01-01"));
   assert.equal(countAt(a, h, dayNumber("2024-06-01")), 0);
-  assert.equal(levelAt(a, h, dayNumber("2024-06-01")), -1);
+  assert.equal(levelAt(a, h, dayNumber("2024-06-01")), 0);
 });

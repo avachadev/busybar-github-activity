@@ -26,7 +26,10 @@ export interface History {
   loading: number | null;
   /** A year read failed; it is tried again on the next scroll. */
   failed: number | null;
-  /** Nothing before this day: the newest year found empty below the live graph ends here. */
+  /**
+   * Nothing before this day: the newest year found empty below the live graph
+   * ends here. Days before it are empty days, and the wheel stops at it.
+   */
   floor: DayNumber;
 }
 
@@ -86,8 +89,9 @@ function walk(
   let year: Year | null = null;
   let yearEnd = -Infinity;
   for (let d = start; d <= end; d += 1) {
+    // Before the floor nothing was contributed: an empty day, drawn grey like any other.
     if (d < history.floor) {
-      visit(-1, 0);
+      visit(0, 0);
       continue;
     }
     const i = d - activity.start;
@@ -106,7 +110,7 @@ function walk(
 
 /** Level of `day`, from the live graph or a year read; -1 when not known. */
 export function levelAt(activity: Activity, history: History, day: DayNumber): number {
-  if (day < history.floor) return -1;
+  if (day < history.floor) return 0;
   if (day >= activity.start && day <= activity.end) {
     const level = activity.levels[day - activity.start];
     if (level >= 0) return level;

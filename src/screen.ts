@@ -19,6 +19,8 @@ import {
   GRAPH_TOP,
   PERIOD_LABEL_X,
   PERIOD_TEXT_Y,
+  SHADOW_COLOR,
+  COUNT_SHADOW_COLOR,
   INSET,
   LABEL_COLOR,
   MESSAGE_COLOR,
@@ -68,7 +70,7 @@ function picture(id: string, data: string, x: number, y: number, display: "front
 
 /**
  * The front screen, after the Figma mockup, as parts the app puts together and
- * keeps: the icon on the left, a white label from x 12, a green count at the
+ * keeps: the icon on the left, a white label from x 11, a green count at the
  * right edge, the 72-week graph under them, and over the graph a small layer
  * that lights the chosen period. The icon and the graph are built once and
  * reused, so a step of the wheel sends only the line and the layer.
@@ -90,18 +92,23 @@ export function litElement(data: string, column: number): Element {
 }
 
 /**
- * The label and the count. `count` is -1 while it is being read. A label too
- * long for the room left of the count, a long user name, scrolls in that room.
+ * The label and the count, each with a shadow, after the Figma mockup: the text
+ * one pixel up, and the same text one pixel under it: the label's in the colour
+ * of an empty day, the count's in a dark green. `count` is -1 while it is being read. A label too long for the room left
+ * of the count, a long user name, scrolls in that room, its shadow with it.
  */
 export function periodLine(label: string, count: number): Element[] {
   // One dark column after the count, so it does not run into the screen's edge.
   const edge = SCREEN_W - 2;
   const value = count < 0 ? "..." : String(count);
   const room = edge - textWidth(value) + 1 - WORD_GAP - PERIOD_LABEL_X;
-  const labelElement = text("label", PERIOD_LABEL_X, label, TOTAL_COLOR, "top_left", PERIOD_TEXT_Y);
   const scroll = { width: room, scroll_rate: 1200, scroll_start_delay: 1000, scroll_repeat_delay: 1500 };
+  const scrolled = (e: Element): Element => (textWidth(label) > room ? ({ ...e, ...scroll } as Element) : e);
+  const shadow = (e: Element): Element => ({ ...e, z_index: 1 }) as Element;
   return [
-    textWidth(label) > room ? ({ ...labelElement, ...scroll } as Element) : labelElement,
+    shadow(scrolled(text("label_shadow", PERIOD_LABEL_X, label, SHADOW_COLOR, "top_left", PERIOD_TEXT_Y + 1))),
+    shadow(text("count_shadow", edge, value, COUNT_SHADOW_COLOR, "top_right", PERIOD_TEXT_Y + 1)),
+    scrolled(text("label", PERIOD_LABEL_X, label, TOTAL_COLOR, "top_left", PERIOD_TEXT_Y)),
     text("count", edge, value, count < 0 ? LABEL_COLOR : COUNT_COLOR, "top_right", PERIOD_TEXT_Y),
   ];
 }

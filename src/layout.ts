@@ -75,10 +75,18 @@ export const DIM = 0.3;
  */
 export const LIT_EMPTY_COLOR = "#343C4A";
 
-/** The front screen's line, after the Figma mockup: the 9x9 icon, a white label from x 12, the count on the right in green. */
-export const PERIOD_LABEL_X = 12;
-export const PERIOD_TEXT_Y = 0;
-export const COUNT_COLOR = "#35A85B";
+/** The front screen's line, after the Figma mockup: the 9x9 icon, a white label from x 11, the count on the right in green. */
+export const PERIOD_LABEL_X = 11;
+/** The text sits a pixel up; its shadow takes the row under it. */
+export const PERIOD_TEXT_Y = -1;
+/** A little brighter than the mockup's #37A75B: on LEDs the count reads better. */
+export const COUNT_COLOR = "#3FC069";
+
+/** The label's shadow: the colour of an empty day. */
+export const SHADOW_COLOR = "#262C36";
+
+/** The count's shadow, after the mockup: a dark green under the green digits. */
+export const COUNT_SHADOW_COLOR = "#122318";
 
 export const TOTAL_COLOR = "#FFFFFF";
 export const LABEL_COLOR = "#8B8B8B";
